@@ -1,6 +1,9 @@
 'use strict';
 
 const express = require('express');
+const sequelize = require('./db');
+// eslint-disable-next-line no-unused-vars
+const User = require('./models/User');
 
 const app = express();
 
@@ -10,7 +13,21 @@ app.get('/api/status', (req, res) => {
   res.json({ status: 'The API is functioning correctly.' });
 });
 
-app.listen(3000, () => {
-  // eslint-disable-next-line no-console
-  console.log('The server is listening on port 3000');
-});
+const startServer = async () => {
+  try {
+    await sequelize.sync();
+    // eslint-disable-next-line no-console
+    console.log('Database synchronized successfully!');
+
+    app.listen(3000, () => {
+      // eslint-disable-next-line no-console
+      console.log('The server is listening on port 3000');
+    });
+  } catch (error) {
+    // eslint-disable-next-line no-console
+    console.log('Failed to start the application:', error);
+    process.exit(1);
+  }
+};
+
+startServer();
