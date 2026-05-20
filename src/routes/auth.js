@@ -53,4 +53,27 @@ router.post('/register', async (req, res) => {
   }
 });
 
+router.get('/activate/:token', async (req, res) => {
+  const token = req.params.token;
+
+  const user = await User.findOne({
+    where: {
+      activationToken: token,
+    },
+  });
+
+  if (user === null) {
+    return res
+      .status(400)
+      .json({ message: 'Invalid or expired activation link' });
+  }
+
+  user.isActive = true;
+  user.activationToken = null;
+
+  await user.save();
+
+  res.status(200).json({ message: 'Account has been activated' });
+});
+
 module.exports = router;
