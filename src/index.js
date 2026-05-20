@@ -4,10 +4,13 @@ const express = require('express');
 const sequelize = require('./db');
 // eslint-disable-next-line no-unused-vars
 const User = require('./models/User');
+const authRoutes = require('./routes/auth');
 
 const app = express();
 
 app.use(express.json({ limit: '1mb' }));
+
+app.use('/api/auth', authRoutes);
 
 app.get('/api/status', (req, res) => {
   res.json({ status: 'The API is functioning correctly.' });
