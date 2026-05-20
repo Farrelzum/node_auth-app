@@ -3,11 +3,13 @@ const bcrypt = require('bcrypt');
 const router = express.Router();
 const User = require('../models/User');
 const { v4: uuidv4 } = require('uuid');
+const sendActivationEmail = require('../services/emailService');
 
 const hasCapitalLetter = (string) => /[A-Z]/.test(string);
 
 router.post('/register', async (req, res) => {
   const saltRounds = 10;
+  const activationToken = uuidv4();
 
   try {
     const { name, email, password } = req.body;
@@ -28,17 +30,23 @@ router.post('/register', async (req, res) => {
 
     const hash = await bcrypt.hash(password, saltRounds);
 
-    await User.create({
+    const newUser = await User.create({
       name: name,
       email: email,
       password: hash,
-      activationToken: uuidv4(),
+      activationToken: activationToken,
     });
+
+    await sendActivationEmail(email, activationToken);
 
     res.status(201).json({
       message:
         // eslint-disable-next-line max-len
         'User registered successfully. Please check your email to activate your account.',
+      user: {
+        name: newUser.name,
+        email: newUser.email,
+      },
     });
   } catch (error) {
     res.status(500).json({ message: 'Server error' });
