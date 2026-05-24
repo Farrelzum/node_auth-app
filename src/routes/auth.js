@@ -4,6 +4,7 @@ const router = express.Router();
 const User = require('../models/User');
 const { v4: uuidv4 } = require('uuid');
 const sendActivationEmail = require('../services/emailService');
+const jwt = require('jsonwebtoken');
 
 const hasCapitalLetter = (string) => /[A-Z]/.test(string);
 
@@ -48,6 +49,49 @@ router.post('/register', async (req, res) => {
         email: newUser.email,
       },
     });
+  } catch (error) {
+    res.status(500).json({ message: 'Server error' });
+  }
+});
+
+router.post('/login', async (req, res) => {
+  try {
+    const { email, password } = req.body;
+
+    const user = await User.findOne({
+      where: {
+        email: email,
+      },
+    });
+
+    if (user === null) {
+      return res.status(401).json({ message: 'Wrong email or password' });
+    }
+
+    const isPasswordValid = await bcrypt.compare(password, user.password);
+
+    if (!isPasswordValid) {
+      return res.status(401).json({ message: 'Wrong email or password' });
+    }
+
+    if (user.isActive === false) {
+      return res.status(403).json({
+        message:
+          // eslint-disable-next-line max-len
+          'Your account has not been activated. Please check your mail for activation messsage',
+      });
+    }
+
+    const payload = {
+      id: user.id,
+      email: user.email,
+    };
+
+    const token = jwt.sign(payload, process.env.JWT_SECRET, {
+      expiresIn: '1h',
+    });
+
+    res.status(200).json({ token: token });
   } catch (error) {
     res.status(500).json({ message: 'Server error' });
   }
