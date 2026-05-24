@@ -20,7 +20,7 @@ app.get('/api/status', (req, res) => {
 
 const startServer = async () => {
   try {
-    await sequelize.sync();
+    await sequelize.sync({ alter: true });
     // eslint-disable-next-line no-console
     console.log('Database synchronized successfully!');
 
