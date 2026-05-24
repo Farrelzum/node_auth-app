@@ -157,4 +157,51 @@ router.post('/forgot-password', async (req, res) => {
   }
 });
 
+router.patch('/reset-password/:token', async (req, res) => {
+  try {
+    const token = req.params.token;
+    const newPassword = req.body.newPassword;
+    const saltRounds = 10;
+
+    if (!token) {
+      return res.status(401).json({ message: 'Token missing' });
+    }
+
+    if (!newPassword) {
+      return res
+        .status(400)
+        .json({ message: 'User needs to provide new password' });
+    }
+
+    if (newPassword.length < 8) {
+      return res.status(400).json({ message: 'Password too short' });
+    } else if (!hasCapitalLetter(newPassword)) {
+      return res
+        .status(400)
+        .json({ message: 'Password must contain at least one capital letter' });
+    }
+
+    const user = await User.findOne({
+      where: {
+        resetToken: token,
+      },
+    });
+
+    if (!user) {
+      return res.status(400).json({ message: 'Invalid or expired token' });
+    }
+
+    const hash = await bcrypt.hash(newPassword, saltRounds);
+
+    user.password = hash;
+    user.resetToken = null;
+
+    await user.save();
+
+    return res.status(200).json({ message: 'Password has been reset' });
+  } catch (error) {
+    return res.status(500).json({ message: 'Server error' });
+  }
+});
+
 module.exports = router;
