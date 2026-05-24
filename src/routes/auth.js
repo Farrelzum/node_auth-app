@@ -3,7 +3,10 @@ const bcrypt = require('bcrypt');
 const router = express.Router();
 const User = require('../models/User');
 const { v4: uuidv4 } = require('uuid');
-const sendActivationEmail = require('../services/emailService');
+const {
+  sendActivationEmail,
+  sendPasswordResetEmail,
+} = require('../services/emailService');
 const jwt = require('jsonwebtoken');
 
 const hasCapitalLetter = (string) => /[A-Z]/.test(string);
@@ -118,6 +121,40 @@ router.get('/activate/:token', async (req, res) => {
   await user.save();
 
   res.status(200).json({ message: 'Account has been activated' });
+});
+
+router.post('/forgot-password', async (req, res) => {
+  try {
+    const { email } = req.body;
+
+    if (!email) {
+      return res.status(400).json({ message: 'User needs to provide email' });
+    }
+
+    const user = await User.findOne({
+      where: {
+        email: email,
+      },
+    });
+
+    if (user) {
+      const resetToken = uuidv4();
+
+      user.resetToken = resetToken;
+
+      await user.save();
+
+      await sendPasswordResetEmail(email, resetToken);
+    }
+
+    return res.status(200).json({
+      message:
+        // eslint-disable-next-line max-len
+        'If an account with that email exists, we sent a password reset link.',
+    });
+  } catch (error) {
+    return res.status(500).json({ message: 'Server error' });
+  }
 });
 
 module.exports = router;
