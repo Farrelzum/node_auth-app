@@ -51,7 +51,26 @@ const sendPasswordResetEmail = async (to, token) => {
   }
 };
 
+const sendEmailChangedNotification = async (oldEmail) => {
+  try {
+    const info = await transporter.sendMail({
+      from: '"Example Team" <team@example.com>',
+      to: oldEmail,
+      subject: 'Changed Email',
+      text: `Your email has been changed`,
+      html: `<a>Your email has been changed</a>`,
+    });
+
+    // eslint-disable-next-line no-console
+    console.log('Message sent: %s', info.messageId);
+  } catch (err) {
+    // eslint-disable-next-line no-console
+    console.error('Error while sending mail:', err);
+  }
+};
+
 module.exports = {
   sendActivationEmail,
   sendPasswordResetEmail,
+  sendEmailChangedNotification,
 };

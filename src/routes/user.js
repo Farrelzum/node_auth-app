@@ -3,6 +3,7 @@ const router = express.Router();
 const authMiddleware = require('../middleware/authMiddleware');
 const bcrypt = require('bcrypt');
 const User = require('../models/User');
+const { sendEmailChangedNotification } = require('../services/emailService');
 
 const hasCapitalLetter = (string) => /[A-Z]/.test(string);
 
@@ -39,12 +40,14 @@ router.patch('/name', authMiddleware, async (req, res) => {
 router.patch('/password', authMiddleware, async (req, res) => {
   try {
     const saltRounds = 10;
-    const { oldPassword, newPassword } = req.body;
+    const { oldPassword, newPassword, confirmPassword } = req.body;
 
-    if (!oldPassword || !newPassword) {
-      return res
-        .status(400)
-        .json({ message: 'Old or new password is missing' });
+    if (!oldPassword || !newPassword || !confirmPassword) {
+      return res.status(400).json({ message: 'All fields are required' });
+    }
+
+    if (newPassword !== confirmPassword) {
+      return res.status(400).json({ message: 'New passwords do not match' });
     }
 
     if (newPassword.length < 8) {
@@ -87,6 +90,42 @@ router.patch('/password', authMiddleware, async (req, res) => {
       .json({ message: 'Password has been changed succesfully' });
   } catch (error) {
     return res.status(500).json({ message: 'Server error' });
+  }
+});
+
+router.patch('/email', authMiddleware, async (req, res) => {
+  try {
+    const { password, newEmail, confirmNewEmail } = req.body;
+
+    if (!password || !newEmail || !confirmNewEmail) {
+      return res.status(400).json({ message: 'All fields are required' });
+    }
+
+    if (newEmail !== confirmNewEmail) {
+      return res.status(400).json({ message: 'New mail do not match' });
+    }
+
+    const user = await User.findByPk(req.user.id);
+
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+
+    const isPasswordTheSame = await bcrypt.compare(password, user.password);
+
+    if (!isPasswordTheSame) {
+      return res.status(401).json({ message: 'Invalid password' });
+    }
+
+    await sendEmailChangedNotification(user.email);
+
+    user.email = newEmail;
+
+    await user.save();
+
+    res.status(200).json({ message: 'Email has been changed successfully' });
+  } catch (error) {
+    res.status(500).json({ message: 'Server error' });
   }
 });
 

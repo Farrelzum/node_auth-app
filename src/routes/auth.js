@@ -8,6 +8,7 @@ const {
   sendPasswordResetEmail,
 } = require('../services/emailService');
 const jwt = require('jsonwebtoken');
+const authMiddleware = require('../middleware/authMiddleware');
 
 const hasCapitalLetter = (string) => /[A-Z]/.test(string);
 
@@ -202,6 +203,10 @@ router.patch('/reset-password/:token', async (req, res) => {
   } catch (error) {
     return res.status(500).json({ message: 'Server error' });
   }
+});
+
+router.post('/logout', authMiddleware, (req, res) => {
+  return res.status(200).json({ message: 'Logged out successfully' });
 });
 
 module.exports = router;
