@@ -161,17 +161,21 @@ router.post('/forgot-password', async (req, res) => {
 router.patch('/reset-password/:token', async (req, res) => {
   try {
     const token = req.params.token;
-    const newPassword = req.body.newPassword;
+    const { newPassword, confirmPassword } = req.body;
     const saltRounds = 10;
 
     if (!token) {
       return res.status(401).json({ message: 'Token missing' });
     }
 
-    if (!newPassword) {
+    if (!newPassword || !confirmPassword) {
       return res
         .status(400)
-        .json({ message: 'User needs to provide new password' });
+        .json({ message: 'Both password fields are required' });
+    }
+
+    if (newPassword !== confirmPassword) {
+      return res.status(400).json({ message: 'Passwords do not match' });
     }
 
     if (newPassword.length < 8) {

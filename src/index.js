@@ -14,12 +14,12 @@ app.use(express.json({ limit: '1mb' }));
 app.use('/api/auth', authRoutes);
 app.use('/api/user', userRoutes);
 
-app.use((req, res) => {
-  res.status(404).json({ message: 'Page not found' });
-});
-
 app.get('/api/status', (req, res) => {
   res.json({ status: 'The API is functioning correctly.' });
+});
+
+app.use((req, res) => {
+  res.status(404).json({ message: 'Page not found' });
 });
 
 const startServer = async () => {
